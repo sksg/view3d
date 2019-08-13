@@ -1,7 +1,7 @@
 from PyQt5 import QtCore, Qt, QtWidgets, QtOpenGL, QtGui
 import os
 import numpy as np
-from .pointcloud import pointcloud
+from ..pointcloud import pointcloud
 
 
 this_dir = os.path.dirname(__file__)
@@ -27,7 +27,6 @@ class viewer(QtWidgets.QOpenGLWidget):
         self.point_count = None
         self.set_camera((0, 0, 0), (0, 0, 1), (0, -1, 0))
         self.set_perspective(30, 1, 0.0, 1000.0)
-        self.load_pointcloud('pointcloud.ply')
 
     def initializeGL(self):
         self.gl = self.context().versionFunctions()
@@ -68,24 +67,8 @@ class viewer(QtWidgets.QOpenGLWidget):
         self.array_object.release()
         self.program.release()
 
-    def load_pointcloud(self, filename):
-        PC = pointcloud().readPLY(filename)
-        PC.colors = PC.colors / 255
-        valid = ~(np.isnan(PC.positions).any(axis=1))
-        valid &= ~(np.isnan(PC.normals).any(axis=1))
-        valid &= ~(np.isnan(PC.colors).any(axis=1))
-        PC.positions = PC.positions[valid]
-        PC.normals = PC.normals[valid]
-        PC.colors = PC.colors[valid]
-
-        self.__new_vertices = np.hstack((PC.positions, PC.normals, PC.colors))
-        center = self.__new_vertices[:, :3].mean(axis=0)
-        self.set_camera((0, 0, 0), center, (0, -1, 0))
-        self.update()
-
     def set_vertices(self, vertices):
         self.__new_vertices = vertices
-        self.set_camera((0, 0, 0), vertices[:, :3].mean(axis=0), (0, -1, 0))
         self.update()
 
     def set_camera(self, position=None, look_at=None, up=None):
@@ -288,6 +271,30 @@ class app():
         self.zoom_level = self.zoom_level + delta
         self.update_view()
         self.update_perspective()
+
+    def load_pointcloud(self, filename_or_pointcloud):
+        if isinstance(filename_or_pointcloud, str):
+            PC = pointcloud().readPLY(filename_or_pointcloud)
+        else:
+            PC = filename_or_pointcloud
+        PC.colors = PC.colors / 255
+        valid = ~(np.isnan(PC.positions).any(axis=1))
+        valid &= ~(np.isnan(PC.normals).any(axis=1))
+        valid &= ~(np.isnan(PC.colors).any(axis=1))
+        PC.positions = PC.positions[valid]
+        PC.normals = PC.normals[valid]
+        PC.colors = PC.colors[valid]
+
+        self.viewer.set_vertices(np.hstack((PC.positions,
+                                            PC.normals,
+                                            PC.colors)))
+        self.center = PC.positions.mean(axis=0)
+        norm = np.linalg.norm(self.center)
+        self.zoom_scale = 300
+        self.zoom_level = np.log(norm) * self.zoom_scale
+        self.cam_vec = -(self.center / norm)
+        self.up_vec = np.array([0., -1., 0.])
+        self.update_view()
 
     def run(self):
         self.viewer.show()

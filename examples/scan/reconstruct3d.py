@@ -1,10 +1,16 @@
 import os
 import sys
 import view3d
-from view3d import structuredlight as sl
+from view3d import structuredlight as sl, camera, viewer
 import numpy as np
 import time
 import re
+
+if os.path.exists("pointcloud.ply"):
+    app = viewer.app()
+    app.load_pointcloud("pointcloud.ply")
+    app.run()
+    exit()
 
 
 def get(content, url):
@@ -62,29 +68,29 @@ frexp = ['frame0_[0-9]*.png', 'frame1_[0-9]*.png']
 print("Processing calibration sequence")
 first_start = time.time()
 frames = np.stack([view3d.io.read_images(calibration, frexp[0],
-                                       frmsort, color=False),
+                                         frmsort, color=False),
                    view3d.io.read_images(calibration, frexp[1],
-                                       frmsort, color=False)])
+                                         frmsort, color=False)])
 print("Images loaded [s]", time.time() - first_start)
 print("Calib images:", frames.shape)
 
 start = time.time()
-reference = view3d.camera.checkerboard((22, 13), 15, coarse=0.5)
+reference = camera.checkerboard((22, 13), 15, coarse=0.5)
 points3D, pxls = reference.find_in_image(frames)
 print("Find reference [s]", time.time() - start)
 print("Checkerboard pxl count:", (~np.isnan(pxls[..., 0])).sum())
 
 start = time.time()
-*cameras, _, _ = view3d.camera.stereocalibrate(points3D[0], *pxls, frames.shape)
+*cameras, _, _ = camera.stereocalibrate(points3D[0], *pxls, frames.shape)
 print("Calibrate cameras [s]", time.time() - start)
 # print("Cameras:\n", cameras[0], "\n", cameras[1])
 
 start = time.time()
-*rectified, R0, R1 = view3d.camera.stereorectify(*cameras)
+*rectified, R0, R1 = camera.stereorectify(*cameras)
 print("... rectify [s]", time.time() - start)
 
 start = time.time()
-maps = np.array([view3d.camera.undistort_rectify_map(c, R, nc)
+maps = np.array([camera.undistort_rectify_map(c, R, nc)
                  for c, R, nc in zip(cameras, [R0, R1], rectified)])
 maps = maps.swapaxes(0, 1)
 print("... maps [s]", time.time() - start)
@@ -141,3 +147,7 @@ ply = view3d.pointcloud(points, colors, normals).writePLY("pointcloud")
 print("... ply files exported [s]", time.time() - start)
 
 print("Sequence processed!! [s]", time.time() - first_start)
+
+app = viewer.app()
+app.load_pointcloud(ply)
+app.run()
