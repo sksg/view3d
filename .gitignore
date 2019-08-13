@@ -1,6 +1,6 @@
 __pycache__
 .vscode
-*/.DS_Store
+.DS_Store
 examples/scan/birdies
 examples/scan/calibration
 examples/scan/pointcloud.ply
