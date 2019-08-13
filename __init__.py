@@ -6,3 +6,5 @@ from . import interpolate
 from .grayscale import grayscale
 
 from . import camera
+
+from . import viewer

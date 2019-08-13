@@ -1,7 +1,5 @@
 import os
 import sys
-sys.path.append(os.getcwd())
-os.chdir(os.path.dirname(sys.argv[0]))
 import view3d
 from view3d import structuredlight as sl
 import numpy as np
