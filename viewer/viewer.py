@@ -3,7 +3,6 @@ import os
 import numpy as np
 from ..pointcloud import pointcloud
 
-
 this_dir = os.path.dirname(__file__)
 
 
