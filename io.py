@@ -18,7 +18,7 @@ def imwrite(path, image):
     return cv2.imwrite(path, image[:, :, ::-1])  # RGB -> BGR
 
 
-def read_images(path, rexp=r'.*\.png', sort=None, filter=None, color=True):
+def read_images(path, rexp=r'.*\.png', sort=sorted, filter=None, color=True):
     files = [os.path.join(path, f)
              for f in os.listdir(path)
              if re.match(rexp, f)]
